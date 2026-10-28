@@ -1,5 +1,5 @@
 
-import { z } from "zod";
+import { email, z } from "zod";
 
 export const updateProfileSchema = z.object({
   body: z.object({
@@ -36,5 +36,25 @@ export const changePasswordSchema = z.object({
             message : "Password baru harus berbeda dari password lama",
             path: ["newPassword"]
         }
+    ),
+});
+
+export const forgorPasswordSchema = z.object({
+    body : z.object({
+        email : z.string().trim() .email("Format email tidak valid"),
+    }),
+});
+
+export const resetPasswordSchema = z.object({
+    body : z.object({
+        token : z.string().min(1,"Token reset wajib diisi"),
+        newpassword : z.string() .min(8,"Password minimal 8 karakter"),
+        confirmPassword : z.string().min(1,"konfirmasi password wajib diisi"),
+    }) .refine(
+        (data) => data.newpassword === data.confirmPassword,
+        {
+            message : "Konfirmasi password tidak cocok",
+            path : ["confirmPassword"],
+        },
     ),
 });
