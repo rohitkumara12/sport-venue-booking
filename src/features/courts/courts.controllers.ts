@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validateCreateCourt } from "../../validator/validator";
-import { createCourt, getCourtDetail, listCourts } from "./courts.services";
+import { createCourt, getCourtDetail, listCourtReviews, listCourts } from "./courts.services";
 
 const queryString = (value: unknown) => (typeof value === "string" && value !== "" ? value : undefined);
 
@@ -18,6 +18,12 @@ export const getCourtsController = async (req: Request, res: Response) => {
 export const getCourtDetailController = async (req: Request<{ id: string }>, res: Response) => {
   const court = await getCourtDetail(req.params.id, queryString(req.query.date));
   res.status(200).json({ success: true, message: "Detail lapangan", data: court });
+};
+
+// GET /courts/:id/reviews
+export const getCourtReviewsController = async (req: Request<{ id: string }>, res: Response) => {
+  const reviews = await listCourtReviews(req.params.id);
+  res.status(200).json({ success: true, message: "Ulasan lapangan", data: reviews });
 };
 
 // POST /courts  (admin)

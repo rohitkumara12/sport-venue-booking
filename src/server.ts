@@ -7,6 +7,9 @@ import { corsOptions } from './configs/cors.config';
 import AuthRoute from './features/auth/auth.routes';
 import cookieParser from 'cookie-parser';
 import courtRouter from './features/courts/courts.routes';
+import { adminTransactionRouter, bookingRouter } from './features/bookings/bookings.routes';
+import reviewRouter from './features/reviews/reviews.routes';
+import { startBookingExpiryJob } from './jobs/booking-expiry.job';
 
 const PORT = parseInt(process.env.PORT || '8002', 10);
 const API_PREFIX = process.env.API_PREFIX || '/api/v1';
@@ -43,6 +46,9 @@ app.get(`${API_PREFIX}/health`, (req, res) => {
 // Routes
 app.use(API_PREFIX, AuthRoute);
 app.use(`${API_PREFIX}/courts`, courtRouter);
+app.use(`${API_PREFIX}/bookings`, bookingRouter);
+app.use(`${API_PREFIX}/admin/transactions`, adminTransactionRouter);
+app.use(`${API_PREFIX}/reviews`, reviewRouter);
 
 // Centralized Error
 app.use(errormiddleware);
@@ -52,6 +58,8 @@ console.log("### SPORT VENUE BACKEND DEBUG V1 ###");
 app.listen(PORT, () => {
   console.log(`Application Running on port: ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}${API_PREFIX}/health`);
+  // Cek transaksi yang lewat 30 menit setiap 30 detik (expired / canceled otomatis).
+  startBookingExpiryJob();
 });
 
 export default app;
