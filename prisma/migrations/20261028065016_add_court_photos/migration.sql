@@ -1,2 +1,2 @@
-ALTER TABLE "Court"
-ADD COLUMN "photos" TEXT[] DEFAULT ARRAY[]::TEXT[];
+-- AlterTable
+ALTER TABLE "Court" ADD COLUMN     "photos" TEXT[] DEFAULT ARRAY[]::TEXT[];

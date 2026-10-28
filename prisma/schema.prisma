@@ -91,10 +91,11 @@ model Court {
   description  String?
   sportType    String?  @db.VarChar(100)
   pricePerHour Decimal  @db.Decimal(12, 2)
+  photos       String[] @default([])
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  photos  String[] @default([])
+
   bookings Booking[]
 }
 

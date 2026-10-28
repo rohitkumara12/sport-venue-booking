@@ -6,6 +6,7 @@ import cors from 'cors';
 import { corsOptions } from './configs/cors.config';
 import AuthRoute from './features/auth/auth.routes';
 import cookieParser from 'cookie-parser';
+import courtRouter from './features/courts/courts.routes';
 
 const PORT = parseInt(process.env.PORT || '8002', 10);
 const API_PREFIX = process.env.API_PREFIX || '/api/v1';
@@ -41,6 +42,7 @@ app.get(`${API_PREFIX}/health`, (req, res) => {
 
 // Routes
 app.use(API_PREFIX, AuthRoute);
+app.use(`${API_PREFIX}/courts`, courtRouter);
 
 // Centralized Error
 app.use(errormiddleware);
