@@ -48,17 +48,20 @@ enum NotificationType {
   MEMBERSHIP
   SYSTEM
 }
+enum Role {
+  ADMIN
+  USER
+}
 
 model User {
   id            String    @id @default(uuid())
   name          String    @db.VarChar(125)
   email         String    @unique @db.VarChar(125)
-  Passwordhash  String
-  role          String    @db.VarChar(125)
+  password      String    @db.VarChar
+  role          Role    @default(USER)
   profile_Image String    @db.VarChar(125)
   createdAt     DateTime
   updatedAt     DateTime?
-
   bookings            Booking[]
   transactions        Transaction[]
   customerMemberships CustomerMembership[]
