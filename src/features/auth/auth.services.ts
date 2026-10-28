@@ -187,6 +187,12 @@ static async forgotPassword(email : string) {
             message : "Jika email terdaftar, instruksi reset password akan dikirim.",
         };
     }
+     await prisma.passwordResetToken.deleteMany({
+            where : {
+                userId : user.id,
+                usedAt : null,
+            },
+        });
     const token = randomBytes(32).toString("hex")
 
         const tokenHash = createHash("sha256")
@@ -195,12 +201,6 @@ static async forgotPassword(email : string) {
 
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-        const resetToken = await prisma.passwordResetToken.deleteMany({
-            where : {
-                userId : user.id,
-                usedAt : null,
-            },
-        });
         await prisma.passwordResetToken.create({
             data : {
                 userId : user.id,
@@ -208,13 +208,14 @@ static async forgotPassword(email : string) {
                 expiresAt,
             },
         });
-
         const frontendurl = process.env.FRONTEND_URL;
 
         if(!frontendurl) {
             throw new Error("FRONT_END_URL belum dikonfigurasi");
         }
-        const reseturl = `${frontendurl.replace(/\/$/,"")}/reset-password?token=${token}`;
+
+        const reseturl = 
+            `${frontendurl.replace(/\/$/,"")}/reset-password?token=${token}`;
 
         await sendResetPasswordEmail(user.email,reseturl);
 
@@ -235,6 +236,7 @@ static async resetPassword(body:{
 const tokenHash = createHash("sha256")
     .update(body.token)
     .digest("hex");
+
     const resetToken = await prisma.passwordResetToken.findUnique({
     where: { tokenHash },
   });
