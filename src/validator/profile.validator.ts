@@ -48,10 +48,10 @@ export const forgorPasswordSchema = z.object({
 export const resetPasswordSchema = z.object({
     body : z.object({
         token : z.string().min(1,"Token reset wajib diisi"),
-        newpassword : z.string() .min(8,"Password minimal 8 karakter"),
+        newPassword : z.string() .min(8,"Password minimal 8 karakter"),
         confirmPassword : z.string().min(1,"konfirmasi password wajib diisi"),
     }) .refine(
-        (data) => data.newpassword === data.confirmPassword,
+        (data) => data.newPassword === data.confirmPassword,
         {
             message : "Konfirmasi password tidak cocok",
             path : ["confirmPassword"],
