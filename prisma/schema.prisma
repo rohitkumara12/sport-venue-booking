@@ -48,22 +48,41 @@ enum NotificationType {
   MEMBERSHIP
   SYSTEM
 }
+enum Role {
+  ADMIN
+  USER
+}
 
 model User {
   id            String    @id @default(uuid())
   name          String    @db.VarChar(125)
   email         String    @unique @db.VarChar(125)
-  Passwordhash  String
-  role          String    @db.VarChar(125)
+  password      String    @db.VarChar
+  role          Role    @default(USER)
   profile_Image String    @db.VarChar(125)
   createdAt     DateTime
   updatedAt     DateTime?
-
   bookings            Booking[]
   transactions        Transaction[]
   customerMemberships CustomerMembership[]
   reviews             Review[]
   notifications       Notification[]
+
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id String  @id @default(uuid())
+  tokenHash String @unique
+  userId String
+  expiresAt DateTime
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  @@index([userId])
+
 }
 
 model Court {
@@ -75,7 +94,7 @@ model Court {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
+  photos  String[] @default([])
   bookings Booking[]
 }
 
