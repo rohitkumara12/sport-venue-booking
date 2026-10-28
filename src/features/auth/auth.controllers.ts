@@ -4,7 +4,8 @@ import { authService } from "./auth.services";
 import { validate } from "../../validator/validate";
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../errors/Apperror";
-import { changePasswordSchema, updateProfileSchema } from "../../validator/profile.validator";
+import { changePasswordSchema, forgorPasswordSchema, resetPasswordSchema, updateProfileSchema } from "../../validator/profile.validator";
+import { success } from "zod";
 
 export class authController {
   static async register(
@@ -139,6 +140,47 @@ static async changePassword (
         return next(error) ;
       
         }
+    }
+
+    static async forgotPassword(
+      req : Request,
+      res : Response,
+      next : NextFunction,
+    ) {
+      try {
+        const{body} = validate(forgorPasswordSchema,{
+          body : req.body
+        });
+
+        const result = await authService.forgotPassword(body.email);
+
+        return res.status(201).json({
+          success : true,
+          message : result.message,
+        });
+      } catch(error) {
+        return next(error);
+      }
+    }
+
+    static async resetPassword(
+      req : Request,
+      res : Response,
+      next : NextFunction,
+    ) {
+      try {
+        const {body} = validate(resetPasswordSchema, {
+          body : req.body
+        });
+
+        const result = await authService.resetPassword(body);
+        return res.status(200).json({
+          success: true,
+          message:result.message,
+        });
+      } catch(error) {
+        return next(error);
+      }
     }
 }
 
