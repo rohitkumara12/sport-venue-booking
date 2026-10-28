@@ -62,4 +62,6 @@ app.listen(PORT, () => {
   startBookingExpiryJob();
 });
 
+app.use("/api/auth",AuthRoute)
+
 export default app;

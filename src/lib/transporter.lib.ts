@@ -24,4 +24,20 @@ export const sendRegisterEmail = async(email : string,name : string) =>{
     });
 };
 
+export const sendResetPasswordEmail = async (
+    email : string,
+    reseturl : string
+) => {
+    return transporter.sendMail({
+        from: `CourtKita <${process.env.MAIL_USER}>`,
+        to: email,
+        subject : "Reset Your CourtKita Password",
+        html: `<h2 Password reset Request</h2>
+        <p> We received a request to reset your CourtKita password</p>
+        <a href="${reseturl}"> Reset Password</a>
+        <p> This link will expire in 15 minutes.</p>
+        <p> If you did not request this,you can ignore this email.</p>`,
+    })
+}
+
 export default transporter;
