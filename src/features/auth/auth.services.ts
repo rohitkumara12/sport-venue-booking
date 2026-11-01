@@ -9,6 +9,8 @@ import { id } from "zod/v4/locales";
 import { error } from "console";
 import { createHash, randomBytes } from "crypto";
 import { resetPasswordSchema } from "../../validator/profile.validator";
+import uploadToCloudinary from "../../utils/uploadToCloudinary";
+import cloudinary from "../../configs/cloudinary.config";
 export class authService{
     static async register ({body}: RegisterInput){
         const finduserbyemail = await prisma.user.findUnique({
@@ -94,6 +96,63 @@ static async getProfile(userId: string) {
     return user;
 }
 
+static async updateProfileImage(
+    userId : string,
+    file : Express.Multer.File
+) {
+    const user = await prisma.user.findUnique({
+        where : {
+            id : userId
+        },
+        select : {
+            id : true,
+            profile_Image : true
+        }
+    });
+    if (!user) {
+        throw new AppError(404,"User Profile not found")
+    };
+
+    const uploadedImage = await  uploadToCloudinary(file);
+
+    const updatedUser = await prisma.user.update({
+        where : {
+            id : userId
+        },
+        data : {
+            profile_Image : uploadedImage.secure_url
+        },
+        select : {
+            id : true,
+            name : true,
+            email : true,
+            role : true,
+            profile_Image : true,
+            createdAt: true,
+            updatedAt: true
+        }
+    });
+    if (user.profile_Image) {
+        try {
+            const oldimageurl = user.profile_Image;
+
+            if (oldimageurl.includes("res.cloudinary.com")) {
+                const publicIdWithExtension = oldimageurl
+                    .split("/upload/")[1]?.replace(/^v\d+\//,"");
+
+                    const publicId = publicIdWithExtension
+                    ?.replace(/\.[^/.]+$/, "");
+
+                    if (publicId) {
+                        await cloudinary.uploader.destroy(publicId);
+                    }
+            }
+        } catch(error) {
+            console.error("Gagal menghapus foti dari profil lama :",error)
+        }
+    }
+    return updatedUser
+}
 static async updateProfile(
     userId : string,
     body: {name?: string; email?: string}

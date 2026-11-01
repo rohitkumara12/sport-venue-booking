@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "profile_Image" DROP NOT NULL,
+ALTER COLUMN "profile_Image" SET DATA TYPE VARCHAR(500);

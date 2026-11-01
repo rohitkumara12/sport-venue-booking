@@ -27,6 +27,7 @@ enum TransactionStatus {
   REJECTED
   REFUNDED
   EXPIRED
+  CANCELLED
 }
 
 enum TransactionType {
@@ -59,7 +60,7 @@ model User {
   email         String    @unique @db.VarChar(125)
   password      String    @db.VarChar
   role          Role    @default(USER)
-  profile_Image String    @db.VarChar(125)
+  profile_Image String?    @db.VarChar(500)
   createdAt     DateTime
   updatedAt     DateTime?
   bookings            Booking[]
