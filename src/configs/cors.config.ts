@@ -12,7 +12,7 @@ export const corsOptions: CorsOptions = {
     */
     if (
       !ALLOWED_ORIGINS?.includes(origin!) &&
-      process.env.NODE_ENV === 'PRODUCTION'
+      process.env.NODE_ENV === 'production'
     )
       return callback(new Error('Origin not allowed by CORS'), false);
 

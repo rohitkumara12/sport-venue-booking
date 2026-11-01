@@ -5,7 +5,7 @@ import { validate } from "../../validator/validate";
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../errors/Apperror";
 import { changePasswordSchema, forgorPasswordSchema, resetPasswordSchema, updateProfileSchema } from "../../validator/profile.validator";
-import { success } from "zod";
+
 
 export class authController {
   static async register(
@@ -48,6 +48,7 @@ export class authController {
         secure: process.env.NODE_ENV === "PRODUCTION",
         sameSite: "lax",
         path: "/",
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       return res.status(200).json({
@@ -180,6 +181,55 @@ static async changePassword (
         });
       } catch(error) {
         return next(error);
+      }
+    }
+
+    static async logout(
+      req : Request,
+      res : Response,
+      next : NextFunction
+    ) {
+      try {
+        res.clearCookie("token",{
+          httpOnly : true,
+          secure : process.env.NODE_ENV === "PRODUCTION",
+          sameSite : "lax",
+          path : "/",
+        });
+        res.status(200).json({
+          message : "Logout berhasil",
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+
+    static async updateProfileImage(
+      req : Request,
+      res : Response,
+      next : NextFunction
+    ) {
+      try {
+        const payload = res.locals.payload;
+
+        if (!payload?.id) {
+          throw new AppError(401,"Invalid authentication payload")
+        }
+        if (!req.file) {
+          throw new AppError(400,"Profile image is required");
+        }
+
+        const updateUser = await authService.updateProfileImage(
+          payload.id,
+          req.file
+        );
+        res.status(201).json({
+          success : true,
+          message : "profile image updated successfully",
+          data : updateUser,
+        });
+      } catch(error) {
+        return next(error)
       }
     }
 }

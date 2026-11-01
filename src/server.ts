@@ -54,6 +54,6 @@ app.listen(PORT, () => {
   console.log(`Health check: http://localhost:${PORT}${API_PREFIX}/health`);
 });
 
-app.use("/api/auth",AuthRoute)
+
 
 export default app;
