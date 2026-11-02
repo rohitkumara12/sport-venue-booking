@@ -1,19 +1,7 @@
-import { addHours, isValid, parse, setHours } from "date-fns";
 import { prisma } from "../../configs/prisma.client.config";
 import { AppError } from "../../errors/Apperror";
-
-// Jam operasional lapangan: 08:00 - 22:00, dibagi per 1 jam (14 slot per hari).
-const OPEN_HOUR = 8;
-const CLOSE_HOUR = 22;
-const TOTAL_SLOTS = CLOSE_HOUR - OPEN_HOUR;
-
-// Booking yang masih menahan slot. CANCELLED/EXPIRED dianggap slot kosong lagi.
-const HOLDING_STATUSES = ["PENDING", "CONFIRMED"] as const;
-
-interface BookedRange {
-  startTime: Date;
-  endTime: Date;
-}
+import { HOLDING_STATUSES, TOTAL_SLOTS, buildSlots, parseDay } from "../../lib/schedule";
+import { expireOverdueBookings } from "../../jobs/booking-expiry.job";
 
 export interface CourtFilters {
   search?: string;
@@ -27,28 +15,6 @@ export interface CreateCourtInput {
   pricePerHour: number;
   description?: string;
   photos?: string[];
-}
-
-function parseDay(date?: string): { dayStart: Date; dayEnd: Date } {
-  const day = date ? parse(date, "yyyy-MM-dd", new Date()) : new Date();
-  if (!isValid(day)) throw new AppError(400, "Format tanggal harus yyyy-MM-dd");
-  const dayStart = setHours(day, 0);
-  dayStart.setMinutes(0, 0, 0);
-  return { dayStart, dayEnd: addHours(dayStart, 24) };
-}
-
-function buildSlots(dayStart: Date, bookings: BookedRange[]) {
-  return Array.from({ length: TOTAL_SLOTS }, (_, i) => {
-    const start = setHours(dayStart, OPEN_HOUR + i);
-    const end = addHours(start, 1);
-    const isBooked = bookings.some((b) => b.startTime < end && b.endTime > start);
-    return {
-      start: start.toISOString(),
-      end: end.toISOString(),
-      label: `${String(OPEN_HOUR + i).padStart(2, "0")}:00`,
-      isAvailable: !isBooked,
-    };
-  });
 }
 
 // Review terhubung ke court lewat booking, jadi rating dihitung manual per court.
@@ -70,6 +36,7 @@ async function getRatings(courtIds: string[]) {
 
 export async function listCourts({ search, sportType, date }: CourtFilters) {
   const { dayStart, dayEnd } = parseDay(date);
+  await expireOverdueBookings();
 
   const courts = await prisma.court.findMany({
     where: {
@@ -112,6 +79,7 @@ export async function listCourts({ search, sportType, date }: CourtFilters) {
 
 export async function getCourtDetail(id: string, date?: string) {
   const { dayStart, dayEnd } = parseDay(date);
+  await expireOverdueBookings();
 
   const court = await prisma.court.findFirst({
     where: { id, isActive: true },
@@ -158,4 +126,19 @@ export async function createCourt(input: CreateCourtInput) {
     },
   });
   return { ...court, pricePerHour: Number(court.pricePerHour) };
+}
+
+export async function listCourtReviews(courtId: string) {
+  const reviews = await prisma.review.findMany({
+    where: { booking: { courtId } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      createdAt: true,
+      user: { select: { name: true, profile_Image: true } },
+    },
+  });
+  return reviews;
 }
