@@ -9,6 +9,7 @@ import {
   listTransactionsController,
   rejectTransactionController,
   submitPaymentProofController,
+  listAdminBookingController
 } from "./bookings.controllers";
 
 // Semua route booking butuh login.
@@ -28,3 +29,7 @@ adminTransactionRouter.use(authenticate, Authorize(["ADMIN"]));
 adminTransactionRouter.get("/", listTransactionsController);
 adminTransactionRouter.patch("/:id/confirm", confirmTransactionController);
 adminTransactionRouter.patch("/:id/reject", rejectTransactionController);
+export const adminBookingRouter = Router();
+adminBookingRouter.use(authenticate, Authorize(["ADMIN"]));
+
+adminBookingRouter.get("/", listAdminBookingController);
