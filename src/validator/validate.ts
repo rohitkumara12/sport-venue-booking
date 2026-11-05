@@ -1,4 +1,3 @@
-import { error } from "node:console";
 import { ZodType } from "zod";
 import { AppError } from "../errors/Apperror";
 

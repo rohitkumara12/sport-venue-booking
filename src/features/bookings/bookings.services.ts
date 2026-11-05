@@ -196,13 +196,28 @@ export async function listAvailableMemberships(userId: string) {
 // ---------- Admin ----------
 
 export async function listTransactions(status: string) {
+ 
   await expireOverdueBookings();
   const transactions = await prisma.transaction.findMany({
-    where: { type: "BOOKING_PAYMENT", status: status as never },
+    where: {
+       type:{
+        in : ["BOOKING_PAYMENT", "MEMBERSHIP_PURCHASE"]
+       },
+       status: status as never 
+      },
     orderBy: { updatedAt: "desc" },
     include: {
       user: { select: { name: true, email: true } },
-      booking: { include: { court: { select: { id: true, name: true } } } },
+      booking: { 
+        include: { 
+        court: { select: { id: true, name: true } } 
+      },
+     },
+     customerMembership : {
+      include : {
+        membershipPlan : true,
+      },
+     }
     },
   });
   return transactions.map((t) => ({
@@ -219,34 +234,129 @@ export async function listTransactions(status: string) {
       endTime: t.booking.endTime,
       court: t.booking.court,
     },
+    membership : t.customerMembership && {
+      id : t.customerMembership.id,
+      status : t.customerMembership.status,
+      totalSession : t.customerMembership.totalSessions,
+      remainingSessions : t.customerMembership.remainingSessions,
+      startsAt : t.customerMembership.startsAt,
+      expiresAt : t.customerMembership.expiresAt,
+      membershipPlan : t.customerMembership.membershipPlan
+    }
+  }));
+}
+ export async function listAdminBooking() {
+  await expireOverdueBookings();
+
+  const bookings = await prisma.booking.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      ...bookingInclude,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return bookings.map((booking) => ({
+    ...toBookingResponse(booking),
+    customer: booking.user,
   }));
 }
 
 async function decideTransaction(id: string, decision: "PAID" | "REJECTED") {
   await expireOverdueBookings();
+   const tx = await prisma.transaction.findUnique({
+    where: { id },
+    include: {
+      customerMembership: {
+        include: {
+          membershipPlan: true,
+        },
+      },
+    },
+  });
 
-  const tx = await prisma.transaction.findUnique({ where: { id } });
-  if (!tx) throw new AppError(404, "Transaksi tidak ditemukan");
+  if (!tx) {
+    throw new AppError(404, "Transaksi tidak ditemukan");
+  }
 
   await prisma.$transaction(async (db) => {
-    // Hanya bisa diputuskan selama masih menunggu konfirmasi dan belum lewat 30 menit.
-    const updated = await db.transaction.updateMany({
-      where: { id, status: "PROOF_SUBMITTED", expiresAt: { gt: new Date() } },
-      data: { status: decision, confirmedAt: new Date() },
-    });
-    if (updated.count === 0) throw new AppError(400, "Transaksi ini sudah tidak menunggu konfirmasi");
+    const now = new Date();
 
+    const updated = await db.transaction.updateMany({
+      where: {
+        id,
+        status: "PROOF_SUBMITTED",
+        expiresAt: { gt: now },
+      },
+      data: {
+        status: decision,
+        confirmedAt: now,
+      },
+    });
+
+    if (updated.count === 0) {
+      throw new AppError(
+        400,
+        "Transaksi ini sudah tidak menunggu konfirmasi"
+      );
+    }
+
+    // Jika transaksi booking
     if (tx.bookingId) {
       await db.booking.update({
         where: { id: tx.bookingId },
-        // Ditolak = slot dilepas lagi untuk customer lain.
-        data: { status: decision === "PAID" ? "CONFIRMED" : "CANCELLED" },
+        data: {
+          status: decision === "PAID" ? "CONFIRMED" : "CANCELLED",
+        },
       });
+    }
+
+    // Jika transaksi membership
+    if (tx.customerMembershipId) {
+      const membership = tx.customerMembership;
+
+      if (!membership) {
+        throw new AppError(404, "Membership tidak ditemukan");
+      }
+
+      if (decision === "PAID") {
+        const expiresAt = addHours(
+          now,
+          membership.membershipPlan.durationDays * 24
+        );
+
+        await db.customerMembership.update({
+          where: { id: membership.id },
+          data: {
+            status: "ACTIVE",
+            startsAt: now,
+            expiresAt,
+            remainingSessions: membership.totalSessions,
+          },
+        });
+      } else {
+        await db.customerMembership.update({
+          where: { id: membership.id },
+          data: {
+            status: "CANCELLED",
+          },
+        });
+      }
     }
   });
 
   return { id, status: decision };
 }
+
+
 
 export const confirmTransaction = (id: string) => decideTransaction(id, "PAID");
 export const rejectTransaction = (id: string) => decideTransaction(id, "REJECTED");

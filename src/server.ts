@@ -7,9 +7,10 @@ import { corsOptions } from './configs/cors.config';
 import AuthRoute from './features/auth/auth.routes';
 import cookieParser from 'cookie-parser';
 import courtRouter from './features/courts/courts.routes';
-import { adminTransactionRouter, bookingRouter } from './features/bookings/bookings.routes';
+import { adminBookingRouter, adminTransactionRouter, bookingRouter } from './features/bookings/bookings.routes';
 import reviewRouter from './features/reviews/reviews.routes';
 import { startBookingExpiryJob } from './jobs/booking-expiry.job';
+import { MembershipRouter } from './features/membership/membership.routes';
 
 const PORT = parseInt(process.env.PORT || '8002', 10);
 const API_PREFIX = process.env.API_PREFIX || '/api/v1';
@@ -46,10 +47,23 @@ app.get(`${API_PREFIX}/health`, (req, res) => {
 // Routes
 app.use(API_PREFIX, AuthRoute);
 app.use(`${API_PREFIX}/courts`, courtRouter);
-app.use(`${API_PREFIX}/bookings`, bookingRouter);
+app.use(`${API_PREFIX}/admin/bookings`, adminBookingRouter);
 app.use(`${API_PREFIX}/admin/transactions`, adminTransactionRouter);
 app.use(`${API_PREFIX}/reviews`, reviewRouter);
+app.use(`${API_PREFIX}/memberships`, MembershipRouter);// Routes
+app.use(API_PREFIX, AuthRoute);
+app.use(`${API_PREFIX}/courts`, courtRouter);
 
+// Customer booking routes
+app.use(`${API_PREFIX}/bookings`, bookingRouter);
+
+// Admin routes
+app.use(`${API_PREFIX}/admin/bookings`, adminBookingRouter);
+app.use(`${API_PREFIX}/admin/transactions`, adminTransactionRouter);
+
+app.use(`${API_PREFIX}/reviews`, reviewRouter);
+app.use(`${API_PREFIX}/memberships`, MembershipRouter);
+console.log("ADMIN BOOKING ROUTE REGISTERED");
 // Centralized Error
 app.use(errormiddleware);
 console.log("### SPORT VENUE BACKEND DEBUG V1 ###");

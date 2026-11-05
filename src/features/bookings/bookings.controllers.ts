@@ -10,12 +10,14 @@ import {
   confirmTransaction,
   createBooking,
   getBooking,
+  listAdminBooking,
   listAvailableMemberships,
   listMyBookings,
   listTransactions,
   rejectTransaction,
   submitPaymentProof,
 } from "./bookings.services";
+import { success } from "zod";
 
 // Diisi oleh middleware authenticate dari JWT di cookie.
 const currentUser = (res: Response) => res.locals.payload as { id: string; role: string };
@@ -72,3 +74,19 @@ export const rejectTransactionController = async (req: Request, res: Response) =
   const result = await rejectTransaction(params.id);
   res.status(200).json({ success: true, message: "Pembayaran ditolak", data: result });
 };
+
+export const listAdminBookingController = async (
+  _req: Request,
+  res: Response
+) => {
+  const booking = await listAdminBooking();
+
+  console.log("ADMIN BOOKINGS:", booking);
+
+  res.status(200).json({
+    success: true,
+    message: "Daftar seluruh booking",
+    data: booking,
+  });
+};
+
